@@ -48,9 +48,12 @@
 ## 🚀 使用方法
 
 1.  打开你的 Clash 客户端 (例如 Clash Verge) 将当前clash正在运行的订阅配置文件切换为你想要测试的订阅配置文件， 然后获取该配置文件的yaml文件绝对路径, 在config.yaml中配置yaml_path。
-    ![获取订阅配置的yaml文件](assets/clash-open-yaml.png)
-    ![通过vscode获取path](assets/clash-open-yaml-vscode.png)
-    ![通过记事本获取path](assets/clash-open-yaml-jsb.png)
+    获取订阅配置的yaml文件
+    ![](assets/clash-open-yaml.png)
+    通过vscode获取path
+    ![](assets/clash-open-yaml-vscode.png)
+    通过记事本获取path, 鼠标悬停展示但无法复制，需要在对应的文件夹中找到再复制
+    ![](assets/clash-open-yaml-jsb.png)
 
 2.  确保 **External Controller** (外部控制) 已在设置中开启，并在config.yaml中配置clash_api_url与clash_api_secret与之对应。
     ![alt text](assets/clash-controller.png)
@@ -64,7 +67,8 @@
     - 逐个测试代理节点。
     - 生成一个名为 `your_config_checked.yaml` 的新文件。
 5.  在项目当前文件夹下将生成的 `_checked.yaml` 文件导入 Clash 即可切换该配置查看结果！
-    ![导入_checked.yaml配置](assets/clash-import.png)
+    导入_checked.yaml配置
+    ![](assets/clash-import.png)
 
 ## 📝 输出示例
 
