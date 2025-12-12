@@ -1,88 +1,109 @@
-# 🚀 Clash Node Automator (Auto-IPCheck)
+# 🚀 Clash Node IP CHECKER
+
+[中文](README.md) | [English](README_EN.md)
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-An intelligent automation tool for **Clash Verge** (and compatible cores) that automatically tests your proxy nodes, checks their IP purity/risk score via [IPPure](https://ippure.com/), and renames them with useful indicators (Bot Score, IP Risk, Native/Broadcast status).
+一个针对 **Clash Verge** (及兼容核心) 的智能自动化工具。它会自动遍历你的代理节点，通过 [IPPure](https://ippure.com/) 检测 IP 纯净度和风险值，并重命名节点，添加实用的指标（Bot 分数、IP 风险、原生/广播状态）。
 
-> **Note**: This tool uses **Playwright** for accurate browser-based fingerprinting detection, ensuring the results match what a real user would see.
+![图片描述](assets/clash-node-checked.png)
 
-## ✨ Features
+> **注意**: 本工具使用 **Playwright** 进行高拟真的浏览器指纹检测，确保检测结果与真实用户体验一致。
 
-- **Auto-Switching**: Automatically cycles through your Clash proxies.
-- **Deep IP Analysis**: Checks IP Pure Score, Bot Ratio, IP Attributes (Native/Data Center), and Source.
-- **Smart Filtering**: Skips invalid nodes (e.g., "Expire Date", "Traffic Reset") automatically.
-- **Config Injection**: Generates a new Clash Config (`_checked.yaml`) with emojis and stats appended to node names.
-- **Global Mode Force**: Temporarily forces Clash into Global mode for accurate testing.
+## ✨ 功能特点
 
-## 🛠️ Prerequisites
+- **自动切换**: 自动遍历并切换你的 Clash 代理节点。
+- **深度 IP 分析**: 检测 IP 纯净度分数、Bot 比例、IP 属性 (原生/机房) 以及归属地。
+- **智能过滤**: 自动跳过无效节点 (如 "到期", "流量重置", "官网" 等)。
+- **配置注入**: 生成一个新的 Clash 配置文件 (`_checked.yaml`)，在节点名称后追加 Emoji 和状态信息。
+- **强制全局模式**: 临时将 Clash 强制切换为全局模式以确保测试准确性。
+
+## 🛠️ 前置要求
 
 - **Python 3.10+**
-- **Clash Verge** (or any Clash client with External Controller enabled)
-- **Playwright** (for browser automation)
+- **Clash Verge** (或其他开启了 External Controller 的 Clash 客户端)
+- **Playwright** (用于浏览器自动化)
 
-## 📦 Installation
+## 📦 安装说明
 
-1.  **Clone the Repository**
+1.  **克隆仓库**
     ```bash
-    git clone https://github.com/yourusername/clash-automator.git
-    cd clash-automator
+    git clone git@github.com:tombcato/clash-ip-checker.git
+    cd clash-ip-checker
     ```
 
-2.  **Install Dependencies**
+2.  **安装依赖**
     ```bash
     pip install -r requirements.txt
     playwright install chromium
     ```
 
-3.  **Configure**
-    - Duplicate `config.yaml.example` and rename it to `config.yaml`.
-    - Edit `config.yaml` and fill in your details:
-        - `yaml_path`: The absolute path to your current Clash configuration file.
-        - `clash_api_secret`: Your API key (if any).
+3.  **配置文件**
+    - 复制 `config.yaml.example` 并重命名为 `config.yaml`。
+    - 编辑 `config.yaml` 填入你的信息（具体见下面使用方法）：
+        - `yaml_path`: 你的 Clash 配置文件 (**.yaml**) 的绝对路径。
+        - `clash_api_secret`: 你的 API 密钥 (如果有的话)。
 
-## 🚀 Usage
+## 🚀 使用方法
 
-1.  Open your Clash Client (e.g., Clash Verge).
-2.  Enable **External Controller** in Settings.
-3.  Run the script:
+1.  打开你的 Clash 客户端 (例如 Clash Verge) 将当前clash正在运行的订阅配置文件切换为你想要测试的订阅配置文件， 然后获取该配置文件的yaml文件绝对路径, 在config.yaml中配置yaml_path。
+    ![获取订阅配置的yaml文件](assets/clash-open-yaml.png)
+    ![通过vscode获取path](assets/clash-open-yaml-vscode.png)
+    ![通过记事本获取path](assets/clash-open-yaml-jsb.png)
+
+2.  确保 **External Controller** (外部控制) 已在设置中开启，并在config.yaml中配置clash_api_url与clash_api_secret与之对应。
+    ![alt text](assets/clash-controller.png)
+3.  运行脚本:
     ```bash
     python clash_automator.py
     ```
-4.  The script will:
-    - Connect to Clash API.
-    - Switch to "Global" mode.
-    - Test each proxy one by one.
-    - Generate a new file named `your_config_checked.yaml`.
-5.  Import the new `_checked.yaml` into Clash to see the results!
+4.  脚本将会:
+    - 连接到 Clash API。
+    - 切换到 "Global" (全局) 模式。
+    - 逐个测试代理节点。
+    - 生成一个名为 `your_config_checked.yaml` 的新文件。
+5.  在项目当前文件夹下将生成的 `_checked.yaml` 文件导入 Clash 即可切换该配置查看结果！
+    ![导入_checked.yaml配置](assets/clash-import.png)
 
-## 📝 Output Example
+## 📝 输出示例
 
-Your proxy nodes will be renamed to provide instant visibility into their quality:
+你的代理节点将会被重命名，直观展示其质量：
 
-- `Old Name` -> `New Name 【🟢🔴 Native|ISP】`
+### 🔍 结果解读
 
-| Symbol | Meaning |
-| :---: | :--- |
-| 🟢 | Low Risk (Good Pure Score) |
-| 🔴 | High Bot Score (Bad) |
-| Native | Native IP (Good for streaming) |
+格式： `【�🔴 属性|来源】`
 
-## ⚙️ Configuration
+*   **第 1 个 Emoji (🟢)**: **IP 纯净度** (值越低越好，越低越像真实用户)
+*   **第 2 个 Emoji (🟡)**: **Bot 分数** (值越低越不容易被反爬)
+*   **属性**: 机房、住宅 
+*   **来源**: 原生、广播
 
-Currently, configuration is inside `clash_automator.py` (Refactor pending).
-Look for the `CONFIGURATION` section at the top of the file:
+#### 📊 评分对照表
 
-```python
-CLASH_CONFIG_PATH = r"path/to/your/profile.yaml"
-CLASH_API_URL = "http://127.0.0.1:9097"
-CLASH_API_SECRET = ""
-```
+| 范围 | Emoji | 含义 | 建议 |
+| :--- | :---: | :--- | :--- |
+| **0 - 10%** | ⚪ | **极佳** | 极其纯净，适合所有用途 |
+| **11 - 30%** | 🟢 | **优秀** | 甚至适合严格的风控场景 |
+| **31 - 50%** | 🟡 | **良好** | 正常浏览网页，多数服务可用 |
+| **51 - 70%** | 🟠 | **中等** | 可能在从严网站遇阻 |
+| **71 - 90%** | 🔴 | **差** | 黑名单常客，验证码多 |
+| **> 90%** | ⚫ | **极差** | 基本无法访问高防网站 |
 
-## 🤝 Contributing
+#### 🏷️ 常见标签说明
 
-Contributions are welcome! Please submit a Pull Request.
+*   **原生 (Native)**: 指该 IP 归属于当地运营商，通常解锁流媒体 (Netflix, Disney+) 效果最好。
+*   **机房 / 数据中心**: 托管在云服务商的 IP，速度快但可能被流媒体封锁。
+*   **广播**: IP 地理位置与注册地不符。
 
-## ⚠️ Disclaimer
+## ⚙️ 配置项
 
-This tool is for educational and testing purposes only. Use it responsibly and in accordance with the terms of service of the proxies and websites you access.
+查看 `config.yaml.example` 获取所有可用配置项的说明。
+
+## 🤝 贡献参与
+
+欢迎提交 Pull Request 来改进这个项目！
+
+## ⚠️ 免责声明
+
+本工具仅供教育和测试使用。请遵守当地法律法规，并合理使用代理服务。
