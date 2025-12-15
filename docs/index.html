@@ -336,7 +336,14 @@
                 } else {
                     afterImage.onload = syncWidth;
                 }
-                // Try immediately just in case
+
+                // Extra robustness for deployment
+                window.addEventListener('load', syncWidth);
+                setTimeout(syncWidth, 100);
+                setTimeout(syncWidth, 500);
+                setTimeout(syncWidth, 2000);
+
+                // Immediate attempt
                 syncWidth();
 
                 const move = (e) => {

@@ -398,8 +398,8 @@ header {
     display: block;
     height: 100%;
     object-fit: cover;
-    /* Ensure it covers height */
-    /* Check JS for width sync */
+    max-width: none !important;
+    /* Prevent squishing inside 50% wrapper */
 }
 
 /* Labels */
