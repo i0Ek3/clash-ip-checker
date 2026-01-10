@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clash 节点检测器</title>
+    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <!-- CodeMirror for YAML syntax highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/yaml/yaml.min.js"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+
+<body>
+    <main class="container" x-data="app()" x-init="init()">
+        <!-- Header -->
+        <header style="padding-bottom: 0; margin-bottom: 1rem;">
+            <h1 style="margin-bottom: 0.2rem; font-size: 2rem;">
+                ⚡ <span style="color: #10b981;">Clash</span> IP Checker
+            </h1>
+            <p style="font-size: 0.85rem; margin-bottom: 0.5rem; opacity: 0.7;">
+                粘贴 YAML 订阅 → 检测 IP 质量 → 编辑节点 → 导出
+            </p>
+        </header>
+
+        <!-- Input Section (6:4 ratio) -->
+        <div class="grid input-grid">
+            <!-- YAML Input (60%) -->
+            <div class="yaml-column">
+                <label>粘贴 YAML 订阅内容</label>
+                <div id="yaml-editor" class="yaml-editor"></div>
+            </div>
+
+            <!-- Config Panel -->
+            <div>
+
+                <div class="config-panel">
+                    <!-- 核心配置 -->
+                    <fieldset>
+                        <legend>核心配置</legend>
+                        <label style="margin-bottom: 0.5rem;">
+                            <input type="checkbox" x-model="config.fast_mode">
+                            极速模式 (使用API接口，无Bot占比)
+                        </label>
+
+                        <!-- Fast Mode Sub-options -->
+                        <div x-show="config.fast_mode" x-transition
+                            style="margin-bottom: 1.5rem; padding-left: 1.5rem; border-left: 2px solid rgba(255,255,255,0.1);">
+                            <label style="margin-bottom: 0.5rem; font-size: 0.9em;">
+                                优先数据源
+                                <select x-model="config.source" style="margin-top: 0.2rem; padding: 0.4rem;">
+                                    <option value="ping0">Ping0 (有共享人数，不稳定建议勾选降级)</option>
+                                    <option value="ippure">IPPure (无共享人数，稳定)</option>
+                                </select>
+                            </label>
+                            <label style="font-size: 0.9em;">
+                                <input type="checkbox" x-model="config.fallback">
+                                数据源降级 (优选失败时尝试备用)
+                            </label>
+                        </div>
+                        <label>
+                            Clash API 地址 （Clash-设置-外部控制查看）
+                            <input type="text" x-model="config.clash_api_url" placeholder="http://127.0.0.1:9097">
+                        </label>
+                        <label>
+                            Clash API 密钥（同上查看）
+                            <input type="text" x-model="config.clash_api_secret" placeholder="留空表示无密码">
+                        </label>
+                    </fieldset>
+
+                    <!-- 可选配置 (默认折叠) -->
+                    <details class="config-details" style="margin-top: -0.5rem;">
+                        <summary>可选配置</summary>
+
+                        <label>
+                            输出文件后缀
+                            <input type="text" x-model="config.output_suffix" placeholder="_checked">
+                        </label>
+                        <label>
+                            代理组名称 (用于切换节点)
+                            <input type="text" x-model="config.selector_name" placeholder="GLOBAL">
+                        </label>
+                        <!-- 仅非极速模式显示 -->
+                        <label x-show="!config.fast_mode" x-transition>
+                            <input type="checkbox" x-model="config.headless">
+                            隐藏浏览器窗口
+                        </label>
+
+                        <label
+                            style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed rgba(255,255,255,0.1);">
+                            跳过关键词 (逗号分隔)
+                            <small
+                                style="display: block; color: var(--text-muted); margin-bottom: 0.5rem;">包含以下词的节点将被跳过</small>
+                            <input type="text" x-model="config.skip_keywords_str"
+                                placeholder="剩余,重置,到期,有效期,官网,网址,更新,公告,建议">
+                        </label>
+                    </details>
+
+
+
+
+                    <div class="button-group">
+                        <button @click="startCheck" :disabled="isRunning || !yamlContent.trim()" :aria-busy="isRunning">
+                            <span x-show="!isRunning">🚀 开始检测</span>
+                            <span x-show="isRunning">检测中...</span>
+                        </button>
+                        <button @click="stopCheck" x-show="isRunning" class="secondary">
+                            ⏹ 停止
+                        </button>
+                    </div>
+                    <small x-show="error" x-text="error" class="error-text"
+                        style="display: block; text-align: center; margin-top: 0.5rem; transition: all 0.3s ease;"></small>
+                </div>
+            </div>
+        </div>
+
+
+
+        <!-- Results Table -->
+        <section x-show="nodes.length > 0" class="results-section">
+            <div class="results-header">
+                <h3>节点列表 (<span x-text="nodes.length"></span>)</h3>
+
+                <!-- Compact Progress -->
+                <div x-show="showProgress"
+                    style="flex: 1; margin: 0 1.5rem; display: flex; flex-direction: column; justify-content: center; min-width: 200px;">
+                    <progress :value="progress" :max="total"
+                        style="width: 100%; height: 6px; margin-bottom: 2px;"></progress>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #888;">
+                        <span x-text="currentNode"
+                            style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;"></span>
+                        <span x-text="`${progress}/${total}`"></span>
+                    </div>
+                </div>
+
+                <div class="results-actions">
+
+                    <button class="small" @click="exportYaml" :disabled="selected.length === 0">
+                        📥 导出选中 (<span x-text="selected.length"></span>)
+                    </button>
+                </div>
+            </div>
+
+            <table role="grid">
+                <thead>
+                    <tr>
+                        <th><input type="checkbox" @change="toggleAll" :checked="selected.length === nodes.length"></th>
+                        <th>节点名</th>
+                        <th>IP</th>
+                        <th>风控</th>
+                        <th x-show="config.fast_mode">共享</th>
+                        <th x-show="!config.fast_mode">Bot</th>
+                        <th>类型</th>
+                        <th>数据源</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template x-for="node in nodes" :key="node.id">
+                        <tr :class="{'degraded': node.source !== 'ping0'}">
+                            <td>
+                                <input type="checkbox" :value="node.id" x-model="selected">
+                            </td>
+                            <td>
+                                <span x-show="editingId !== node.id" x-text="node.name" @dblclick="startEdit(node)"
+                                    class="editable"></span>
+                                <input x-show="editingId === node.id" x-model="editValue" @blur="saveEdit(node)"
+                                    @keyup.enter="saveEdit(node)" @keyup.escape="cancelEdit" class="inline-edit">
+                            </td>
+                            <td x-text="node.ip"></td>
+                            <td><span :class="getRiskClass(node.risk)" x-text="node.risk"></span></td>
+                            <td x-show="config.fast_mode"><span :class="getSharedClass(node.shared)"
+                                    x-text="node.shared || 'N/A'"></span></td>
+                            <td x-show="!config.fast_mode"><span :class="getRiskClass(node.bot)"
+                                    x-text="node.bot || 'N/A'"></span></td>
+                            <td x-text="`${node.type}|${node.native}`"></td>
+                            <td>
+                                <span
+                                    :class="{'source-ping0': node.source === 'ping0', 'source-ippure': node.source === 'ippure'}"
+                                    x-text="node.source"></span>
+                            </td>
+                            <td>
+                                <button class="small outline" @click="startEdit(node)">✏️</button>
+                                <button class="small outline secondary" @click="recheckNode(node)"
+                                    :disabled="isRunning || isRechecking" title="重新检测此节点">
+                                    <span x-show="!isRechecking || editingId === node.id">🔄</span>
+                                    <span x-show="isRechecking && editingId !== node.id" style="opacity:0.5">⏳</span>
+                                </button>
+                                <button class="small outline danger" @click="deleteNode(node)">🗑️</button>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Export Modal -->
+        <dialog x-ref="exportModal">
+            <article>
+                <header>
+                    <button aria-label="Close" class="close" @click="$refs.exportModal.close()"></button>
+                    <h3>导出 YAML</h3>
+                </header>
+                <!-- CodeMirror container for syntax highlighting -->
+                <div id="export-editor" style="margin-bottom: 1rem;"></div>
+                <footer>
+                    <div style="display: flex; gap: 0.5rem; width: 100%;">
+                        <button @click="downloadYaml">💾 下载</button>
+                        <button class="secondary" @click="copyYaml">📋 复制</button>
+                        <button class="contrast" @click="importToClash" style="margin-left: auto;">🚀 导入 Clash</button>
+                    </div>
+                </footer>
+            </article>
+        </dialog>
+    </main>
+
+    <script src="/static/js/app.js"></script>
+</body>
+
+</html>

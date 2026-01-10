@@ -17,16 +17,21 @@ CLASH_API_URL = cfg.get('clash_api_url', "http://127.0.0.1:9097")
 CLASH_API_SECRET = cfg.get('clash_api_secret', "")
 SELECTOR_NAME = cfg.get('selector_name', "GLOBAL")
 OUTPUT_SUFFIX = cfg.get('output_suffix', "_checked")
-FAST_MODE = cfg.get('fast_mode', False) # Default to False if not in config
+FAST_MODE = cfg.get('fast_mode', True) 
 SKIP_KEYWORDS = cfg.get('skip_keywords', ["剩余", "重置", "到期", "有效期", "官网", "网址", "更新", "公告"])
 HEADLESS = cfg.get('headless', True)
+SOURCE = cfg.get('source', 'ping0')
+FALLBACK = cfg.get('fallback', True)
 
-async def test_single_proxy(controller: ClashController, checker: IPChecker, proxy_name: str, selector: str, local_proxy: str, fast_mode: bool = FAST_MODE) -> Dict[str, Any]:
+async def test_single_proxy(controller: ClashController, checker: IPChecker, proxy_name: str, selector: str, local_proxy: str, 
+                          fast_mode: bool = FAST_MODE, source: str = SOURCE, fallback: bool = FALLBACK) -> Dict[str, Any]:
     """
     Tests a single proxy: switches to it, waits, and checks IP.
     Returns the result dictionary (or error dict).
     """
     print(f"\nTesting: {proxy_name}")
+    
+    # ... switch logic same ...
     
     # 1. Switch Node
     print(f"  -> Switching {selector} ...")
@@ -43,19 +48,13 @@ async def test_single_proxy(controller: ClashController, checker: IPChecker, pro
     res = None
     
     if fast_mode:
-        res = await checker.check_fast(proxy=local_proxy)
+        res = await checker.check_fast(proxy=local_proxy, source=source, fallback=fallback)
     else:
-        # Browser Mode with Retry
-        for attempt in range(2):
-            try:
-                res = await checker.check(proxy=local_proxy)
-                if res.get('error') is None and res.get('pure_score') != '❓':
-                        break # Success
-                if attempt == 0:
-                    print("     Retrying IP check...")
-                    await asyncio.sleep(1)
-            except Exception as e:
-                print(f"     Check error: {e}")
+        # Browser Mode
+        try:
+            res = await checker.check_browser(proxy=local_proxy)
+        except Exception as e:
+            print(f"     Check error: {e}")
     
     if not res:
             res = {"full_string": "【❌ Error】", "ip": "Error", "pure_score": "?", "bot_score": "?"}
@@ -64,12 +63,15 @@ async def test_single_proxy(controller: ClashController, checker: IPChecker, pro
     ip_addr = res.get('ip', 'Unknown')
     p_score = res.get('pure_score', 'N/A')
     b_score = res.get('bot_score', 'N/A')
+    s_users = res.get('shared_users', 'N/A')
     
     print(f"  -> Result: {full_str}")
     
     details_str = f"  -> Details: IP: {ip_addr} | 污染度: {p_score}"
     if b_score != 'N/A':
         details_str += f" | Bot流量比: {b_score}"
+    if s_users != 'N/A':
+        details_str += f" | 共享人数: {s_users}"
     print(details_str)
     
     return res

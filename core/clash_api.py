@@ -54,7 +54,7 @@ class ClashController:
                         if conf.get('socks-port', 0) != 0: return conf['socks-port']
         except Exception:
             pass
-        return 7890 # Default fallback
+        return 7897 # Default fallback
     
     async def get_proxies(self):
         """Fetches all proxies."""

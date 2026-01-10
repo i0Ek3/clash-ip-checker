@@ -9,31 +9,42 @@
 
 
 
-一个针对 **Clash Verge** (及兼容核心) 的智能自动化工具。它会自动遍历你的代理节点，通过 [IPPure](https://ippure.com/) 检测 IP 纯净度和风险值，并重命名节点，添加实用的指标（IP 纯净度、Bot 比例、IP属性/IP来源状态）`【🟢🟡 住宅|原生】`。
+一个针对 **Clash** (及兼容核心) 的自动化节点工具。它会自动遍历你的代理节点，通过 [IPPure](https://ippure.com/)或者[Ping0](https://ping0.cc/) 检测 IP 纯净度和相关属性，并重命名节点，添加实用的指标（IP 纯净度、Bot 比例(或共享人数)、IP属性/IP来源状态）`【🟢🟡 住宅|原生】`。
 
 ![图片描述](assets/clash-node-checked.png)
 
-##  ⚡新增Docker部署 [详情见Docker分支](https://github.com/tombcato/clash-ip-checker/tree/docker)
-相对于主分支而言，Docker部署后代理切换不影响本地网络（非本地部署方式），且能直接输入订阅链接输出新订阅链接，没有繁琐的使用步骤，**正真做到一键替换检测！！！**
-**云部署Demo地址：https://tombcat.space/ipcheck** 
+## 📅 更新日志 (Changelog)
+
+### v2.0.0 (2025-01-11)
+- **Web UI**: 全新推出 Web 可视化界面，操作更便捷。
+- **多源检测**: 新增 `Ping0` 检测源 支持共享人数，与 `ippure` 互补，并设为默认（速度与信息量平衡更佳）。
+- **智能降级**: 新增 `Fallback` 机制，例如：Ping0 失败时自动切换至 IPPure。
+- **极速默认**: 极速模式 (`fast_mode`) 默认开启，大幅提升批量检测效率。
+- **单点重测**: Web 界面支持对单个节点进行重新检测，方便复核。
+- **导出增强**: 支持检测结果的实时预览、编辑和一键导出，修复了导出顺序问题。
+- **体验优化**: 自动清理 IP 缓存，防止结果残留；优化了端口检测和冲突处理。
 
 
 ## ✨ 功能特点
 
-- **⚡ 极速模式 (新!)**: 暂时默认 **关闭**，通过 IPPure API 直接检测，速度比浏览器模式快 10 倍以上！但缺少 Bot 比例分析，输出`【🟢 住宅|原生】`，可在config.yaml中设置`fast_mode = True`开启。
+- **🖥️ Web 可视化界面 (新!)**: 提供现代化的 Web 界面，支持可视化配置，检测可查看实时进度显示、单点重测、结果编辑和导出预览，支持一键跳转导入Clash。
+- **极速模式**: 默认 **开启**，通过 IPPure API 或者 Ping0 直接检测，速度比浏览器模式更快！可在config.yaml中设置`fast_mode = False`关闭。
+- **极速模式多数据源支持**: 支持 `ping0` (默认) 和 `ippure` 两种检测源，支持自动降级 (Fallback) 机制，当 ping0 失败时自动切换到 ippure。**ippure缺少 Bot 比例分析，Ping0有共享人数数据**
 - **自动切换**: 自动遍历并切换你的 Clash 代理节点。
 - **深度 IP 分析**: 检测 IP 纯净度分数、Bot 比例、IP 属性 (原生/机房) 以及归属地。
-- **高拟真检测 (可选)**: 在浏览器模式下使用 **Playwright** 进行高拟真检测，包含 Bot 比例分析。
+- **高拟真检测 (可选)**: 在浏览器模式下使用 **Playwright** 进行高拟真检测，包含 Bot 比例分析。支持无头模式 (Headless) 配置。
 - **智能过滤**: 自动跳过无效节点 (如 "到期", "流量重置", "官网" 等)。
 - **配置注入**: 生成一个新的 Clash 配置文件 (`_checked.yaml`)，在节点名称后追加 Emoji 和状态信息。
 - **强制全局模式**: 临时将 Clash 强制切换为全局模式以确保测试准确性。
+
+##  ⚡新增Docker部署 [详情见Docker分支](https://github.com/tombcato/clash-ip-checker/tree/docker)
+相对于主分支而言，Docker部署后代理切换不影响本地网络（部署NAS或者云服务器），且能直接输入订阅链接输出新订阅链接，没有繁琐的使用步骤，**一键替换订阅url检测！**
+**云部署Demo地址：https://tombcat.space/ipcheck** 
 
 ## 🛠️ 前置要求
 
 - **Python 3.10+**
 - **Clash Verge** (或其他开启了 External Controller 的 Clash 客户端)
-- **Playwright** (用于浏览器模式)
-- **curl_cffi** (用于极速模式)
 
 ## 📦 安装说明
 
@@ -46,19 +57,37 @@
 2.  **安装依赖**
     ```bash
     pip install -r requirements.txt
+    # 非极速模式需要
     playwright install chromium
-    #如果install chromium运行失败说明playwright没添加环境变量 可以用 python -m playwright install chromium
+    # 如果 install chromium 运行失败说明 playwright 没添加环境变量，可以用：
+    # python -m playwright install chromium
     ```
 
-3.  **配置文件**
-    - 修改 `config.yaml.example` **删除文件名.example 重命名为 `config.yaml`** 重要！！！。
-    - 编辑 `config.yaml` 填入你的信息（具体见下面使用方法）：
-        - `fast_mode`: ⚡ 是否使用极速模式 (True/False)。
+3.  **启动 Web 界面 (新版推荐)**
+    ```bash
+    python web.py
+    ```
+    访问 http://127.0.0.1:8080 即可使用图形化界面进行配置和检测。
+    ![alt text](assets/clash-web-check.png)
+4.  **命令行模式 (旧版)**
+    - 修改 `config.yaml.example` 删除后缀重命名为 `config.yaml`。
+    - 编辑 `config.yaml` 填入配置（Web 界面中也可直接设置）：
         - `yaml_path`: 你的 Clash 配置文件 (**.yaml**) 的绝对路径。
         - `clash_api_secret`: 你的 API 密钥 (如果有的话)。
+        - `fast_mode`: ⚡ 是否使用极速模式 (True/False)。
+        - `source`: 检测源，可选 `ping0` 或 `ippure` (默认 ping0)。
+        - `fallback`: 是否开启自动降级 (True/False)。
+    - 运行 `python clash_automator.py`。
 
+## Web 界面使用方法 (新版推荐)
+1. 打开你的 Clash 客户端 (例如 Clash Verge) 将当前clash正在运行的订阅配置文件切换为你想要测试的订阅，点击获取YAML源代码，然后复制粘贴进[web界面](http://127.0.0.1:8080)的yaml框中
+    ![alt text](assets/clash-open-yaml-code.png)
+2. 确保Clash中 External Controller (外部控制) 已在设置中开启，密码随便设置, 然后再Web界面中配置
+![alt text](assets/clash-controller.png)
+3. 使用默认配置直接点击开始即可，检测完成后会可一键预览导入Clash
+![alt text](assets/clash-web-check.png)
 
-## 🚀 使用方法
+## 命令行模式使用方法（旧版）
 
 1.  打开你的 Clash 客户端 (例如 Clash Verge) 将当前clash正在运行的订阅配置文件切换为你想要测试的订阅， 然后获取该配置文件的yaml文件绝对路径, 在config.yaml中配置yaml_path.
     右键配置文件选择打开文件
@@ -131,6 +160,8 @@
 ## 🌟 Star 记录
 
 [![Star History Chart](https://api.star-history.com/svg?repos=tombcato/clash-ip-checker&type=Date)](https://star-history.com/#tombcato/clash-ip-checker&Date)
+
+
 
 
 

@@ -2,7 +2,7 @@
 # 极速模式 (True/False)
 # True: 使用 API 直接检测，速度快但不包含 Bot 比例
 # False: 使用浏览器模拟检测，包含 Bot 比例，速度较慢
-fast_mode: false
+fast_mode: True
 
 # 你的 Clash 配置文件绝对路径 例如 'C:\Users\YourName\AppData\Roaming\clash\config.yaml'
 yaml_path: ''
@@ -15,6 +15,15 @@ clash_api_secret: ""
 
 
 #-------------------可选配置-----------------
+
+# 优先数据源 (ping0 或 ippure), 默认 ping0
+source: "ping0"
+
+# 是否允许降级 (True/False), 默认 True
+# True: 主源失败时尝试备用源
+fallback: true
+
+
 # 输出配置文件后缀
 output_suffix: "_checked"
 

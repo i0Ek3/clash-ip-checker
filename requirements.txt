@@ -1,4 +1,8 @@
+fastapi
+uvicorn[standard]
+jinja2
+pydantic
 aiohttp
-pyyaml
 playwright
 curl_cffi
+ruamel.yaml
